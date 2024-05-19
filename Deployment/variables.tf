@@ -4,10 +4,6 @@ variable "app_name" {
   default     = "Lab4-EKS"
 }
 
-# variable "vpc_id" {
-#   type = string
-# }
-
 variable "aws_region" {
   type        = string
   description = "The aws region to use"

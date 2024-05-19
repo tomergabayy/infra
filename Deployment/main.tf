@@ -1,12 +1,3 @@
-# terraform {
-#   backend "s3" {
-#     bucket         = "weatherapp-eks-state-backend"
-#     key            = "terraform.tfstate"
-#     region         = "il-central-1"
-#     dynamodb_table = "WeatherApp-Eks-state-backend"
-#   }
-# }
-
 # Set up the network module
 module "network" {
   source                 = "../modules/network"
@@ -39,7 +30,7 @@ resource "null_resource" "update_kubeconfig" {
   depends_on = [module.eks]
 }
 module "eks-albcontroller" {
-  source            = "../../../../WeatherApp-infra/Terraform/Terraform-modules/modules/eks-albcontroller"
+  source            = "../modules/eks-albcontroller"
   cluster_name      = module.eks.cluster_name
   cluster-endpoint  = module.eks.cluster_endpoint
   oidc-issuer       = module.eks.eks_oidc_issuer_url
@@ -49,14 +40,14 @@ module "eks-albcontroller" {
 }
 
 module "external-dns" {
-  source      = "../../../../WeatherApp-infra/Terraform/Terraform-modules/modules/external-dns"
+  source      = "../modules/external-dns"
   oidc-arn    = module.iam-oidc.oidc_arn
   oidc-issuer = module.eks.eks_oidc_issuer_url
   depends_on  = [null_resource.update_kubeconfig]
 }
 
 module "argocd" {
-  source       = "../../../../WeatherApp-infra/Terraform/Terraform-modules/modules/argocd-deployment"
+  source       = "../modules/argocd-deployment"
   ROOT_PATH    = var.ROOT_PATH
   cluster-name = module.eks.cluster_name
   depends_on   = [null_resource.update_kubeconfig]
@@ -73,7 +64,7 @@ resource "null_resource" "argocd-init-password" {
 }
 
 module "argocd-repositorys" {
-  source            = "../../../../WeatherApp-infra/Terraform/Terraform-modules/modules/argocd-repositorys"
+  source            = "../modules/argocd-repositorys"
   argo-initial-pass = var.ARGOCD_PASS
   repo-username     = var.REPO_USERNAME
   repo-PAT          = var.HELM_REPO_PAT
@@ -81,7 +72,7 @@ module "argocd-repositorys" {
 }
 
 module "deploy-weatherapp" {
-  source    = "../../../../WeatherApp-infra/Terraform/Terraform-modules/modules/argo-weather-app"
+  source    = "../modules/argo-weather-app"
   REPO_PAT  = var.HELM_REPO_PAT
   ROOT_PATH = var.ROOT_PATH
   depends_on = [module.argocd-repositorys]
